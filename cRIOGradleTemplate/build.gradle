@@ -1,0 +1,104 @@
+
+// Apply the java plugin to add support for Java
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+sourceCompatibility = 1.4
+
+project.ext {
+   cRIOSDKDir = "d:/frc-2016/cRIO-build"
+   teamNumber = 2607
+    robotClassName = "PapalBull"
+    robotPackage = "edu.archwood.frc2607"
+}
+
+// In this section you declare where to find the dependencies of your project
+repositories {
+    // Use 'jcenter' for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+// In this section you declare the dependencies for your production and test code
+dependencies {
+    compile files("$cRIOSDKDir/lib")
+    
+}
+
+// tasks to package & deploy FRC cRIO Java program
+configurations {
+    ftpAntTask
+}
+
+dependencies {
+    ftpAntTask("org.apache.ant:ant-commons-net:1.9.4") {
+        module("commons-net:commons-net:1.4.1") {
+            dependencies "oro:oro:2.0.8:jar"
+        }
+    }
+}
+
+clean.doFirst {
+    println "Cleaning up cRIO-specific outputs"
+    delete "${projectDir}/output/"
+    delete fileTree(dir: "${projectDir}", include: 'image*')
+}
+
+// the preverify task takes compiled Java classes as input
+// the WPI and Squawk classes are in cRIOSDKDir\lib
+// our compiled project classes are in projectDir\build\classes\main
+// preverify should put all classes under projectDir\output, creating it if it doesn't exist
+task cRIOPreverify(dependsOn: 'compileJava') {
+    description 'cRIO Deploy Step 1a : preverify java classes'
+    doLast {
+        project.exec {
+            commandLine = ["${cRIOSDKDir}/bin/preverify.exe", "${cRIOSDKDir}/lib",
+                           "${sourceSets.main.output.classesDir}"]
+        }
+    }
+}
+
+task cRIOJar(dependsOn: cRIOPreverify, type: Jar) {
+    description 'cRIO Deploy Step 2 : create jar file'
+    String s = "${robotClassName}, , ${robotPackage}.${robotClassName}"
+    manifest {
+        attributes(
+                "MIDlet-Name": "cRIO2014",
+                "MIDlet-Version": "1.0.0",
+                "MIDlet-Vendor": "FIRST",
+                "MIDlet-1": s,
+                "MicroEdition-Profile": "IMP-1.0",
+                "MicroEdition-Configuration": "CLDC-1.1"
+        )
+    }
+    from fileTree("${projectDir}/output")
+}
+
+task cRIOSuite(dependsOn: cRIOJar, type: JavaExec) {
+    description 'cRIO Deploy Step 3 : generate suite'
+    main = 'com.sun.squawk.Romizer'
+    args = ["-nobuildproperties", "-suitepath:${cRIOSDKDir}/cRIO", "-boot:squawk", "-metadata", "-lnt",
+            "-cp:${project.buildDir}/libs/${project.name}.jar", "-endian:big", "-o:image",
+            "${project.buildDir}/libs/${project.name}.jar"]
+    classpath = files("${cRIOSDKDir}/bin/romizer_classes.jar", "${cRIOSDKDir}/bin/squawk.jar",
+                 "${cRIOSDKDir}/bin/squawk_device_classes.jar", "${cRIOSDKDir}/bin/translator_classes.jar")
+    jvmArgs = ["-XX:CompileCommand=exclude,com/sun/squawk/Method.getParameterTypes",
+               "-XX:CompileCommand=exclude,com/sun/squawk/SymbolParser.getSignatureTypeAt",
+               "-XX:CompileCommand=exclude,com/sun/squawk/SymbolParser.stripMethods", "-Xmx256M"]
+}
+
+task cRIODeploy(dependsOn: cRIOSuite) {
+    description 'Deploy FRC robot program suite to cRIO'
+    doLast {
+        ant {
+            taskdef(name: 'ftp',
+                    classname: 'org.apache.tools.ant.taskdefs.optional.net.FTP',
+                    classpath: configurations.ftpAntTask.asPath)
+            ftp(server: "10.26.7.2", userid: "anonymous", password: "nothing") {
+
+            }
+        }
+    }
+}
+
