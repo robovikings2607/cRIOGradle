@@ -42,6 +42,7 @@ dependencies {
 clean.doFirst {
     println "Cleaning up cRIO-specific outputs"
     delete "${projectDir}/output/"
+    delete "${projectDir}/bin/"
     delete fileTree(dir: "${projectDir}", include: 'image*')
 }
 
