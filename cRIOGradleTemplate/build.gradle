@@ -9,6 +9,14 @@ apply plugin: 'idea'
 
 sourceCompatibility = 1.4
 
+sourceSets { 
+   main {
+      java {
+         srcDirs = ["d:/frc-2016/gitRepos/Misc/cRIOTest-srcFiles"]
+      }
+   }
+}
+
 project.ext {
    cRIOSDKDir = "d:/frc-2016/cRIO-build"
    teamNumber = 2607
