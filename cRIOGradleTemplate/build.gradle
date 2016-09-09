@@ -86,7 +86,7 @@ task cRIOSuite(dependsOn: cRIOJar, type: JavaExec) {
     description 'cRIO Deploy Step 3 : generate suite'
     main = 'com.sun.squawk.Romizer'
     args = ["-nobuildproperties", "-suitepath:${cRIOSDKDir}/cRIO", "-boot:squawk", "-metadata", "-lnt",
-            "-cp:${project.buildDir}/libs/${project.name}.jar", "-endian:big", "-o:image",
+            "-cp:${project.buildDir}/libs/${project.name}.jar", "-endian:big", "-o:robot",
             "${project.buildDir}/libs/${project.name}.jar"]
     classpath = files("${cRIOSDKDir}/bin/romizer_classes.jar", "${cRIOSDKDir}/bin/squawk.jar",
                  "${cRIOSDKDir}/bin/squawk_device_classes.jar", "${cRIOSDKDir}/bin/translator_classes.jar")
@@ -102,8 +102,8 @@ task cRIODeploy(dependsOn: cRIOSuite) {
             taskdef(name: 'ftp',
                     classname: 'org.apache.tools.ant.taskdefs.optional.net.FTP',
                     classpath: configurations.ftpAntTask.asPath)
-            ftp(server: "10.26.7.2", userid: "anonymous", password: "nothing") {
-
+            ftp(server: "10.26.7.2", userid: "root", password: "", remotedir: "/ni-rt/system") {
+		fileset(file: "${projectDir}/robot.suite")
             }
         }
     }
