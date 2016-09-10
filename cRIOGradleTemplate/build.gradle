@@ -49,7 +49,9 @@ clean.doFirst {
     println "Cleaning up cRIO-specific outputs"
     delete "${projectDir}/output/"
     delete "${projectDir}/bin/"
-    delete fileTree(dir: "${projectDir}", include: 'image*')
+    delete fileTree(dir: "${projectDir}", include: 'robot.suite.*')
+    delete fileTree(dir: "${projectDir}", include: 'robot.suite')
+    delete fileTree(dir: "${projectDir}", include: 'robot.sym')
 }
 
 // the preverify task takes compiled Java classes as input
