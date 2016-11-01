@@ -2,47 +2,44 @@
 	gradle build script for 2014 cRIO Java
 */
 
-// Apply the java plugin to add support for Java
 apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+// the squawk VM on the cRIO only supports up through Java 1.4, so restrict language features to that
 sourceCompatibility = 1.4
 
+// if your Java source files are not in the standard gradle location (i.e. in src/main/java within your 
+// project directory, then uncomment the following line and update the path to point to them
+// sourceSets.main.java.srcDirs = ["d:/frc-2016/gitRepos/Misc/cRIOTest-srcFiles"]
 
-sourceSets.main.java.srcDirs = ["d:/frc-2016/gitRepos/Misc/cRIOTest-srcFiles"]
-
+// Update the configuration parameters below to the values required for your project
 project.ext {
-   cRIOSDKDir = "d:/frc-2016/cRIO-build"
-   teamNumber = 2607
-    robotClassName = "PapalBull"
-    robotPackage = "edu.archwood.frc2607"
+   cRIOSDKDir = "d:/frc-2016/gitRepos/cRIOGradle/cRIO-build"	// SDK location
+   cRIOIPAddr = "10.26.7.2"					// cRIO IP Address 10.TE.AM.2
+   robotClassName = "PapalBull"					// name of your robot class
+   robotPackage = "edu.archwood.frc2607"			// name of the package your robot class is in
 }
 
-// In this section you declare where to find the dependencies of your project
+/*===========================================================================================*/
+// shouldn't need to change anything below this point
+
 repositories {
-    // Use 'jcenter' for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
     jcenter()
 }
 
-// In this section you declare the dependencies for your production and test code
 dependencies {
-    compile files("$cRIOSDKDir/lib")
-    
+    compile files("$cRIOSDKDir/lib")    
 }
 
 // tasks to package & deploy FRC cRIO Java program
 configurations {
-    ftpAntTask
+    antTasks
 }
 
 dependencies {
-    ftpAntTask("org.apache.ant:ant-commons-net:1.9.4") {
-        module("commons-net:commons-net:1.4.1") {
-            dependencies "oro:oro:2.0.8:jar"
-        }
-    }
+    antTasks files("$cRIOSDKDir/sdktoolftp.jar","$cRIOSDKDir/bin/jakarta-oro-2.0.8.jar", 
+    			 "$cRIOSDKDir/bin/commons-net-1.4.1.jar","$cRIOSDKDir/bin/ant-commons-net-1.9.4.jar")
 }
 
 clean.doFirst {
@@ -103,11 +100,21 @@ task cRIODeploy(dependsOn: cRIOSuite) {
         ant {
             taskdef(name: 'ftp',
                     classname: 'org.apache.tools.ant.taskdefs.optional.net.FTP',
-                    classpath: configurations.ftpAntTask.asPath)
-            ftp(server: "10.26.7.2", userid: "root", password: "", remotedir: "/ni-rt/system") {
+                    classpath: configurations.antTasks.asPath)
+            ftp(server: "${cRIOIPAddr}", userid: "root", password: "", remotedir: "/ni-rt/system") {
 		fileset(file: "${projectDir}/robot.suite")
             }
         }
     }
 }
 
+task upgradeTest {
+   doLast {
+   	ant {
+   		taskdef(name: 'frcupgrade',
+   			classname: 'com.sun.spot.sdk.tool.ftp.UpgradeTask',
+   			classpath: configurations.antTasks.asPath)
+   		frcupgrade(remoteaddress: "${cRIOIPAddr}")
+   	}
+   }
+}

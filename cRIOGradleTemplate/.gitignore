@@ -1,5 +1,11 @@
+.idea/
+*.iml
+out/
+.settings/
+.project
+.classpath
 bin/**
 build/**
 output/**
 .gradle/**
-image.*
+robot.*
