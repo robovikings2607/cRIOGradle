@@ -17,7 +17,7 @@ sourceCompatibility = 1.4
 project.ext {
    cRIOSDKDir = "d:/frc-2016/gitRepos/cRIOGradle/cRIO-build"	// SDK location
    cRIOIPAddr = "10.26.7.2"					// cRIO IP Address 10.TE.AM.2
-   robotClassName = "PapalBull"					// name of your robot class
+   robotClassName = "CRIORobot"					// name of your robot class
    robotPackage = "edu.archwood.frc2607"			// name of the package your robot class is in
 }
 
@@ -101,6 +101,18 @@ task cRIODeploy(dependsOn: cRIOSuite) {
             taskdef(name: 'ftp',
                     classname: 'org.apache.tools.ant.taskdefs.optional.net.FTP',
                     classpath: configurations.antTasks.asPath)
+   	    taskdef(name: 'frcupgrade',
+   		    classname: 'com.sun.spot.sdk.tool.ftp.UpgradeTask',
+   		    classpath: configurations.antTasks.asPath)
+   	    frcupgrade(remoteaddress: "${cRIOIPAddr}", 
+   	    	       localotaserverfile: "${cRIOSDKDir}/cRIO/FRC_UserProgram.out", 	    	          	       
+                       remoteotaserverfilepath: "/ni-rt/system/FRC_JavaVM.out",
+		       localvmfile: "${cRIOSDKDir}/cRIO/squawk.out",
+		       remotevmfilepath: "/ni-rt/system/squawk.out",
+		       localsuitefile: "${cRIOSDKDir}/cRIO/squawk.suite",
+		       remotesuitefilepath: "/ni-rt/system/squawk.suite",
+		       remoteversionfilepath: "/FRC_ImageVersion.ini",
+		       versionfailuremessage: "Go to http://first.wpi.edu/FRC/frcjava.html to get latest software update")
             ftp(server: "${cRIOIPAddr}", userid: "root", password: "", remotedir: "/ni-rt/system") {
 		fileset(file: "${projectDir}/robot.suite")
             }
@@ -114,7 +126,8 @@ task upgradeTest {
    		taskdef(name: 'frcupgrade',
    			classname: 'com.sun.spot.sdk.tool.ftp.UpgradeTask',
    			classpath: configurations.antTasks.asPath)
-   		frcupgrade(remoteaddress: "${cRIOIPAddr}")
+   		frcupgrade(remoteaddress: "${cRIOIPAddr}", 
+   			   localsuitefile: "${cRIOSDKDir}/cRIO/squawk.suite")
    	}
    }
 }
